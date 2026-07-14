@@ -29,37 +29,61 @@
         h2 { margin-top: 0; color: #007ac2; font-size: 20px; }
         p.subtitle { color: #6a6a6a; font-size: 13px; margin-bottom: 20px; }
         
-        /* Bouton Connexion */
-        .btn-auth {
+        /* Formulaire de connexion intégré */
+        .auth-form {
+            background-color: #f4f9fc;
+            border: 1px solid #d1e7dd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .auth-form label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            color: #005e95;
+            margin-bottom: 5px;
+        }
+        .auth-form input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #bce1f6;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+        .btn-submit {
             background-color: #007ac2;
             color: white;
             border: none;
-            padding: 12px 20px;
-            font-size: 14px;
+            padding: 10px 15px;
+            font-size: 13px;
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
+            width: 100%;
             transition: background-color 0.2s;
-            margin-bottom: 15px;
-            display: inline-block;
         }
-        .btn-auth:hover { background-color: #005e95; }
+        .btn-submit:hover { background-color: #005e95; }
 
         /* Zone de Drag and Drop */
         .drop-zone {
             border: 2px dashed #007ac2;
             border-radius: 6px;
             padding: 30px 15px;
-            background-color: #f4f9fc;
+            background-color: #fafafa;
             cursor: pointer;
             transition: background-color 0.2s;
             margin-bottom: 15px;
-            opacity: 0.5;
+            opacity: 0.4;
             pointer-events: none; /* Bloqué tant qu'on n'est pas connecté */
         }
         .drop-zone.active {
             opacity: 1;
             pointer-events: auto;
+            background-color: #f4f9fc;
         }
         .drop-zone p { margin: 0; font-size: 14px; color: #005e95; font-weight: 500; }
         .drop-zone span { font-size: 11px; color: #6a6a6a; display: block; margin-top: 5px; }
@@ -77,6 +101,7 @@
         .status-info { background-color: #e2f1fa; color: #005e95; border-left: 4px solid #007ac2; }
         .status-success { background-color: #d1e7dd; color: #0f5132; border-left: 4px solid #198754; }
         .status-error { background-color: #f8d7da; color: #842029; border-left: 4px solid #dc3545; }
+        
         .loader {
             display: inline-block; width: 15px; height: 15px;
             border: 2px solid rgba(0,122,194,.3); border-radius: 50%;
@@ -85,23 +110,31 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
-    <!-- Chargement de la bibliothèque officielle Esri pour l'authentification pop-up -->
-    <script src="https://unpkg.com/@esri/arcgis-rest-request@4.0.0/dist/bundled/request.umd.js"></script>
-    <script src="https://unpkg.com/@esri/arcgis-rest-auth@4.0.0/dist/bundled/auth.umd.js"></script>
 </head>
 <body>
 
 <div class="container">
     <h2>Importateur de traces GPX</h2>
-    <p class="subtitle">Vérification de doublons et intégration directe.</p>
+    <p class="subtitle">Sécurisé, sans pop-up de connexion externe.</p>
 
-    <!-- Étape 1 : Se connecter -->
-    <button class="btn-auth" id="authBtn" onclick="connexionArcGIS()">1. Connexion à ArcGIS Online</button>
+    <!-- Étape 1 : Formulaire de connexion direct -->
+    <div class="auth-form" id="authForm">
+        <label for="portalUrl">Portail ArcGIS</label>
+        <input type="text" id="portalUrl" value="https://cartoasp.maps.arcgis.com" placeholder="https://votre-portail.maps.arcgis.com">
+
+        <label for="username">Identifiant</label>
+        <input type="text" id="username" value="yoann.gerard8" placeholder="Nom d'utilisateur">
+
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" placeholder="Saisissez votre mot de passe">
+
+        <button class="btn-submit" onclick="genererTokenDirect()">Se connecter</button>
+    </div>
 
     <!-- Étape 2 : Envoyer le fichier -->
     <div class="drop-zone" id="dropZone">
-        <p>2. Glissez-déposez le fichier GPX ici</p>
-        <span>ou cliquez pour parcourir</span>
+        <p>Glissez-déposez votre fichier GPX ici</p>
+        <span>ou cliquez pour parcourir votre ordinateur</span>
         <input type="file" id="fileInput" accept=".gpx">
     </div>
 
@@ -113,64 +146,86 @@
     
     let agolToken = null;
     let featureServiceUrl = null;
-    let session = null;
+    let portalUrl = "";
 
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
     const statusBox = document.getElementById('statusBox');
-    const authBtn = document.getElementById('authBtn');
-
-    // App ID standard de démonstration d'Esri (parfait pour les maquettes)
-    const clientId = "arcgisonline"; 
+    const authForm = document.getElementById('authForm');
 
     // ==========================================
-    // AUTHENTIFICATION PAR POP-UP SÉCURISÉE
+    // GÉNÉRATION DIRECTE DU TOKEN VIA API REST (Garantit sans Pop-up)
     // ==========================================
-    function connexionArcGIS() {
-        showStatus("Ouverture de la fenêtre de connexion...", "info");
-        
-        arcgisRest.ArcGISIdentityManager.beginOAuth2({
-            clientId: clientId,
-            portal: "https://www.arcgis.com",
-            popup: true,
-            redirectUri: window.location.href.split('?')[0] // Se redirige sur elle-même
-        }).then((newSession) => {
-            session = newSession;
-            agolToken = session.token;
+    async function genererTokenDirect() {
+        const portalInput = document.getElementById('portalUrl').value.trim();
+        const usernameInput = document.getElementById('username').value.trim();
+        const passwordInput = document.getElementById('password').value;
+
+        if (!passwordInput) {
+            showStatus("Veuillez saisir votre mot de passe.", "error");
+            return;
+        }
+
+        showStatus(`<div class="loader"></div>Génération du jeton sécurisé auprès d'ArcGIS...`, "info");
+        portalUrl = portalInput.replace(/\/$/, ""); // Enlever le slash de fin si présent
+
+        try {
+            const tokenUrl = `${portalUrl}/sharing/rest/generateToken`;
             
-            authBtn.style.backgroundColor = "#198754";
-            authBtn.innerHTML = "✅ Connecté à ArcGIS";
-            showStatus("Connexion établie ! Recherche du référentiel sur votre compte...", "info");
-            
-            rechercherServiceDynamiquement();
-        }).catch((err) => {
-            showStatus("Connexion annulée ou échouée : " + err.message, "error");
-        });
+            const params = new URLSearchParams();
+            params.append("username", usernameInput);
+            params.append("password", passwordInput);
+            params.append("client", "referer");
+            params.append("referer", window.location.origin);
+            params.append("expiration", "120"); // Validité de 2 heures
+            params.append("f", "json");
+
+            const response = await fetch(tokenUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params
+            });
+
+            const data = await response.json();
+
+            if (data.token) {
+                agolToken = data.token;
+                authForm.style.display = "none"; // On masque le formulaire si réussite !
+                showStatus("✅ Authentification réussie ! Recherche de votre couche d'entités...", "info");
+                rechercherServiceDynamiquement();
+            } else if (data.error) {
+                showStatus(`Erreur d'authentification : ${data.error.message} (Détails: ${data.error.details ? data.error.details.join(', ') : ''})`, "error");
+            } else {
+                showStatus("Impossible de se connecter. Vérifiez vos identifiants.", "error");
+            }
+        } catch (e) {
+            showStatus("Erreur réseau de connexion : " + e.message, "error");
+        }
     }
 
     // ==========================================
-    // RECHERCHE DU SERVICE SUR LE COMPTE CONNECTÉ
+    // RECHERCHE DU SERVICE SUR VOTRE COMPTE
     // ==========================================
     async function rechercherServiceDynamiquement() {
         try {
-            const queryUrl = `https://www.arcgis.com/sharing/rest/search?q=title:"${encodeURIComponent(NOM_DU_REFERENTIEL)}" AND type:"Feature Service"&f=json&token=${agolToken}`;
+            const queryUrl = `${portalUrl}/sharing/rest/search?q=title:"${encodeURIComponent(NOM_DU_REFERENTIEL)}" AND type:"Feature Service"&f=json&token=${agolToken}`;
             const response = await fetch(queryUrl);
             const data = await response.json();
 
             if (data.results && data.results.length > 0) {
                 featureServiceUrl = `${data.results[0].url}/0`;
-                dropZone.classList.add('active'); // Débloque la zone de dépôt
-                showStatus("Prêt ! Vous pouvez maintenant glisser ou sélectionner votre GPX.", "success");
+                dropZone.classList.add('active'); // Rend la zone de dépôt interactive
+                showStatus("Prêt ! Vous pouvez glisser-déposer ou cliquer pour importer un GPX.", "success");
             } else {
-                showStatus(`Couche introuvable. Vérifiez que vous avez accès à : "${NOM_DU_REFERENTIEL}"`, "error");
+                showStatus(`Couche introuvable. Assurez-vous d'avoir accès au service : "${NOM_DU_REFERENTIEL}"`, "error");
             }
         } catch (e) {
-            showStatus("Erreur d'accès aux services : " + e.message, "error");
+            showStatus("Erreur lors de la recherche du service : " + e.message, "error");
         }
     }
 
     // ==========================================
-    // INTERFACE DE SÉLECTION DE FICHIER
+    // INTERFACE DE SÉLECTION DE FICHIER LOCAL
     // ==========================================
     dropZone.addEventListener('click', () => { if(featureServiceUrl) fileInput.click(); });
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); });
@@ -184,7 +239,7 @@
     }
 
     // ==========================================
-    // ANALYSE ET CALCULS EN LOCAL (ISO PYTHON)
+    // ANALYSE DU GPX ET TRAITEMENT (ISO SCRIPT PYTHON)
     // ==========================================
     function lireEtTraiterGPX(file) {
         const reader = new FileReader();
