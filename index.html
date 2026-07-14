@@ -78,7 +78,7 @@
             transition: background-color 0.2s;
             margin-bottom: 15px;
             opacity: 0.4;
-            pointer-events: none; /* Bloqué tant qu'on n'est pas connecté */
+            pointer-events: none;
         }
         .drop-zone.active {
             opacity: 1;
@@ -142,8 +142,8 @@
 </div>
 
 <script>
-    // 💡 REMPLACEZ CET ID PAR L'ID UNIQUE DE VOTRE COUCHE ARCGIS (32 caractères)
-    const LAYER_ITEM_ID = "VOTRE_ID_DE_COUCHE_ICI"; 
+    // Le nom de l'élément recherché sur ArcGIS Online
+    const NOM_DU_REFERENTIEL = "Référentiel Patrimoine & Randonnée — Saint-Martin-Sainte-Catherine (pilote). Schéma v7.";
     
     let agolToken = null;
     let featureServiceUrl = null;
@@ -178,7 +178,7 @@
             params.append("password", passwordInput);
             params.append("client", "referer");
             params.append("referer", window.location.origin);
-            params.append("expiration", "120"); // 2 heures
+            params.append("expiration", "120"); 
             params.append("f", "json");
 
             const response = await fetch(tokenUrl, {
@@ -192,8 +192,8 @@
             if (data.token) {
                 agolToken = data.token;
                 authForm.style.display = "none"; 
-                showStatus("✅ Authentification réussie ! Recherche de la couche d'entités...", "info");
-                rechercherServiceDynamiquement();
+                showStatus("✅ Authentification réussie ! Recherche de votre référentiel par son nom...", "info");
+                rechercherIDEtServiceParNom();
             } else if (data.error) {
                 showStatus(`Erreur d'authentification : ${data.error.message}`, "error");
             } else {
@@ -205,25 +205,29 @@
     }
 
     // ==========================================
-    // RECONSTITUTION DYNAMIQUE DU FEATURE SERVICE VIA L'ITEM ID
+    // RECHERCHE PAR NOM POUR OBTENIR L'URL PHYSIQUE DU SERVICE (100% Transposable)
     // ==========================================
-    async function rechercherServiceDynamiquement() {
+    async function rechercherIDEtServiceParNom() {
         try {
-            const queryUrl = `${portalUrl}/sharing/rest/content/items/${LAYER_ITEM_ID}?f=json&token=${agolToken}`;
+            // Requête de recherche textuelle stricte sur le titre de l'élément (Feature Service)
+            const queryUrl = `${portalUrl}/sharing/rest/search?q=title:"${encodeURIComponent(NOM_DU_REFERENTIEL)}" AND type:"Feature Service"&f=json&token=${agolToken}`;
             const response = await fetch(queryUrl);
-            const itemData = await response.json();
+            const searchData = await response.json();
 
-            if (itemData.url) {
-                // On pointe sur le Feature Server physique et on force la première couche (Traces_Brutes)
-                featureServiceUrl = `${itemData.url}/0`;
+            if (searchData.results && searchData.results.length > 0) {
+                // On extrait l'URL de service renvoyée par le premier résultat valide
+                const rawServiceUrl = searchData.results[0].url;
+                
+                // On cible spécifiquement la couche index 0 (Traces_Brutes)
+                featureServiceUrl = `${rawServiceUrl}/0`;
                 
                 dropZone.classList.add('active'); 
                 showStatus("Prêt ! Vous pouvez glisser-déposer ou sélectionner votre GPX.", "success");
             } else {
-                showStatus(`Erreur : Impossible de lire l'URL de l'ID : ${LAYER_ITEM_ID}. Vérifiez qu'il s'agit du bon ID et qu'il est partagé.`, "error");
+                showStatus(`Couche introuvable sur ce compte. Assurez-vous que l'élément s'appelle exactement : "${NOM_DU_REFERENTIEL}" et qu'il est partagé avec vous.`, "error");
             }
         } catch (e) {
-            showStatus("Erreur d'accès à l'élément : " + e.message, "error");
+            showStatus("Erreur lors de la recherche automatique de l'élément : " + e.message, "error");
         }
     }
 
@@ -272,14 +276,12 @@
                 distance2DKm = Math.round((distance2DKm / 1000) * 1000) / 1000;
                 const bbox = { xmin: Math.min(...lons), ymin: Math.min(...lats), xmax: Math.max(...lons), ymax: Math.max(...lats) };
 
-                // Contrôle Doublon 50%
                 const doublonTrouve = await verifierDoublonArcGIS(bbox);
                 if (doublonTrouve) {
                     showStatus(`❌ REJET : Cette trace chevauche à plus de 50% une randonnée existante.`, "error");
                     return;
                 }
 
-                // Reprojection mathématique locale
                 const pathsWebMercator = [coordsWGS84.map(pt => wgs84ToWebMercator(pt[0], pt[1]))];
                 await insererTraceAGOL(file.name, pathsWebMercator, distance2DKm);
 
