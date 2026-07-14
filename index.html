@@ -32,7 +32,7 @@
         /* Formulaire de connexion intégré */
         .auth-form {
             background-color: #f4f9fc;
-            border: 1px solid #d1e7dd;
+            border: 1px solid #bce1f6;
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 20px;
@@ -120,10 +120,10 @@
     <!-- Étape 1 : Formulaire de connexion direct -->
     <div class="auth-form" id="authForm">
         <label for="portalUrl">Portail ArcGIS</label>
-        <input type="text" id="portalUrl" value="https://cartoasp.maps.arcgis.com" placeholder="https://votre-portail.maps.arcgis.com">
+        <input type="text" id="portalUrl" value="https://cartoasp.maps.arcgis.com">
 
         <label for="username">Identifiant</label>
-        <input type="text" id="username" value="yoann.gerard8" placeholder="Nom d'utilisateur">
+        <input type="text" id="username" value="yoann.gerard8">
 
         <label for="password">Mot de passe</label>
         <input type="password" id="password" placeholder="Saisissez votre mot de passe">
@@ -142,7 +142,8 @@
 </div>
 
 <script>
-    const NOM_DU_REFERENTIEL = "Référentiel Patrimoine & Randonnée — Saint-Martin-Sainte-Catherine (pilote). Schéma v7.";
+    // 💡 REMPLACEZ CET ID PAR L'ID UNIQUE DE VOTRE COUCHE ARCGIS (32 caractères)
+    const LAYER_ITEM_ID = "VOTRE_ID_DE_COUCHE_ICI"; 
     
     let agolToken = null;
     let featureServiceUrl = null;
@@ -154,7 +155,7 @@
     const authForm = document.getElementById('authForm');
 
     // ==========================================
-    // GÉNÉRATION DIRECTE DU TOKEN VIA API REST (Garantit sans Pop-up)
+    // GÉNÉRATION DU TOKEN VIA APPEL REST DIRECT
     // ==========================================
     async function genererTokenDirect() {
         const portalInput = document.getElementById('portalUrl').value.trim();
@@ -167,7 +168,7 @@
         }
 
         showStatus(`<div class="loader"></div>Génération du jeton sécurisé auprès d'ArcGIS...`, "info");
-        portalUrl = portalInput.replace(/\/$/, ""); // Enlever le slash de fin si présent
+        portalUrl = portalInput.replace(/\/$/, ""); 
 
         try {
             const tokenUrl = `${portalUrl}/sharing/rest/generateToken`;
@@ -177,7 +178,7 @@
             params.append("password", passwordInput);
             params.append("client", "referer");
             params.append("referer", window.location.origin);
-            params.append("expiration", "120"); // Validité de 2 heures
+            params.append("expiration", "120"); // 2 heures
             params.append("f", "json");
 
             const response = await fetch(tokenUrl, {
@@ -190,11 +191,11 @@
 
             if (data.token) {
                 agolToken = data.token;
-                authForm.style.display = "none"; // On masque le formulaire si réussite !
-                showStatus("✅ Authentification réussie ! Recherche de votre couche d'entités...", "info");
+                authForm.style.display = "none"; 
+                showStatus("✅ Authentification réussie ! Recherche de la couche d'entités...", "info");
                 rechercherServiceDynamiquement();
             } else if (data.error) {
-                showStatus(`Erreur d'authentification : ${data.error.message} (Détails: ${data.error.details ? data.error.details.join(', ') : ''})`, "error");
+                showStatus(`Erreur d'authentification : ${data.error.message}`, "error");
             } else {
                 showStatus("Impossible de se connecter. Vérifiez vos identifiants.", "error");
             }
@@ -204,28 +205,30 @@
     }
 
     // ==========================================
-    // RECHERCHE DU SERVICE SUR VOTRE COMPTE
+    // RECONSTITUTION DYNAMIQUE DU FEATURE SERVICE VIA L'ITEM ID
     // ==========================================
     async function rechercherServiceDynamiquement() {
         try {
-            const queryUrl = `${portalUrl}/sharing/rest/search?q=title:"${encodeURIComponent(NOM_DU_REFERENTIEL)}" AND type:"Feature Service"&f=json&token=${agolToken}`;
+            const queryUrl = `${portalUrl}/sharing/rest/content/items/${LAYER_ITEM_ID}?f=json&token=${agolToken}`;
             const response = await fetch(queryUrl);
-            const data = await response.json();
+            const itemData = await response.json();
 
-            if (data.results && data.results.length > 0) {
-                featureServiceUrl = `${data.results[0].url}/0`;
-                dropZone.classList.add('active'); // Rend la zone de dépôt interactive
-                showStatus("Prêt ! Vous pouvez glisser-déposer ou cliquer pour importer un GPX.", "success");
+            if (itemData.url) {
+                // On pointe sur le Feature Server physique et on force la première couche (Traces_Brutes)
+                featureServiceUrl = `${itemData.url}/0`;
+                
+                dropZone.classList.add('active'); 
+                showStatus("Prêt ! Vous pouvez glisser-déposer ou sélectionner votre GPX.", "success");
             } else {
-                showStatus(`Couche introuvable. Assurez-vous d'avoir accès au service : "${NOM_DU_REFERENTIEL}"`, "error");
+                showStatus(`Erreur : Impossible de lire l'URL de l'ID : ${LAYER_ITEM_ID}. Vérifiez qu'il s'agit du bon ID et qu'il est partagé.`, "error");
             }
         } catch (e) {
-            showStatus("Erreur lors de la recherche du service : " + e.message, "error");
+            showStatus("Erreur d'accès à l'élément : " + e.message, "error");
         }
     }
 
     // ==========================================
-    // INTERFACE DE SÉLECTION DE FICHIER LOCAL
+    // INTERFACE ET GESTION DES FICHIERS
     // ==========================================
     dropZone.addEventListener('click', () => { if(featureServiceUrl) fileInput.click(); });
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); });
@@ -239,7 +242,7 @@
     }
 
     // ==========================================
-    // ANALYSE DU GPX ET TRAITEMENT (ISO SCRIPT PYTHON)
+    // ANALYSE DU GPX ET CALCULS LOCAUX
     // ==========================================
     function lireEtTraiterGPX(file) {
         const reader = new FileReader();
@@ -249,7 +252,7 @@
                 const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
                 const points = xmlDoc.getElementsByTagName("trkpt");
 
-                if (points.length === 0) throw new Error("Aucun point trouvé dans ce fichier GPX.");
+                if (points.length === 0) throw new Error("Aucun point de tracé trouvé dans le GPX.");
 
                 let coordsWGS84 = [];
                 let distance2DKm = 0;
@@ -276,7 +279,7 @@
                     return;
                 }
 
-                // Reprojection mathématique gratuite
+                // Reprojection mathématique locale
                 const pathsWebMercator = [coordsWGS84.map(pt => wgs84ToWebMercator(pt[0], pt[1]))];
                 await insererTraceAGOL(file.name, pathsWebMercator, distance2DKm);
 
@@ -287,7 +290,6 @@
         reader.readAsText(file);
     }
 
-    // Mathématiques locales
     function wgs84ToWebMercator(lon, lat) {
         const x = lon * 20037508.34 / 180.0;
         let y = Math.log(Math.tan((90.0 + Math.max(Math.min(lat, 85.05112878), -85.05112878)) * Math.PI / 360.0)) / (Math.PI / 180.0);
