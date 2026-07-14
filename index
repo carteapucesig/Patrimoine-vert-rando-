@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importateur Local GPX</title>
+    <!-- Style moderne proche de l'univers Esri Calcite -->
+    <style>
+        body {
+            font-family: "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #323232;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h2 {
+            margin-top: 0;
+            color: #007ac2;
+            font-size: 22px;
+        }
+        p.subtitle {
+            color: #6a6a6a;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        /* Zone de Drag and Drop */
+        .drop-zone {
+            border: 2px dashed #007ac2;
+            border-radius: 6px;
+            padding: 40px 20px;
+            background-color: #f4f9fc;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .drop-zone.drag-over {
+            background-color: #e2f1fa;
+            border-color: #005e95;
+        }
+        .drop-zone p {
+            margin: 0;
+            font-size: 15px;
+            color: #005e95;
+            font-weight: 500;
+        }
+        .drop-zone span {
+            font-size: 12px;
+            color: #6a6a6a;
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        /* Statuts et Messages */
+        .status-box {
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+            text-align: left;
+            line-height: 1.4;
+        }
+        .status-info { background-color: #e2f1fa; color: #005e95; border-left: 4px solid #007ac2; }
+        .status-success { background-color: #d1e7dd; color: #0f5132; border-left: 4px solid #198754; }
+        .status-error { background-color: #f8d7da; color: #842029; border-left: 4px solid #dc3545; }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,122,194,.3);
+            border-radius: 50%;
+            border-top-color: #007ac2;
+            animation: spin 1s ease-in-out infinite;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Importateur de traces GPX</h2>
+    <p class="subtitle">Vos fichiers locaux importés de manière 100% sécurisée.</p>
+
+    <!-- Zone de téléversement native -->
+    <div class="drop-zone" id="dropZone">
+        <p>Glissez-déposez votre fichier GPX ici</p>
+        <span>ou cliquez pour parcourir votre ordinateur</span>
+        <input type="file" id="fileInput" accept=".gpx">
+    </div>
+
+    <!-- Affichage dynamique du statut -->
+    <div id="statusBox" class="status-box"></div>
+</div>
+
+<script>
+    const NOM_DU_REFERENTIEL = "Référentiel Patrimoine & Randonnée — Saint-Martin-Sainte-Catherine (pilote). Schéma v7.";
+    
+    let agolToken = null;
+    let portalUrl = "https://www.arcgis.com"; // Standard AGOL
+    let featureServiceUrl = null;
+    let fileToProcess = null;
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const statusBox = document.getElementById('statusBox');
+
+    // ==========================================
+    // 1. CAPTURE DU TOKEN DEPUIS EXPERIENCE BUILDER (OAuth2 PostMessage)
+    // ==========================================
+    window.addEventListener("message", (event) => {
+        // Sécurité : n'accepter que les origines de confiance (Esri)
+        if (!event.origin.endsWith(".arcgis.com")) return;
+
+        const messageData = event.data;
+        if (messageData && messageData.type === "AUTHENTICATION") {
+            agolToken = messageData.payload.token;
+            portalUrl = messageData.payload.portalUrl || "https://www.arcgis.com";
+            showStatus("Authentification réussie ! Récupération de l'ID du service...", "info");
+            rechercherServiceDynamiquement();
+        }
+    });
+
+    // Optionnel : Mode test autonome si hors iframe (permet d'entrer un token manuellement)
+    setTimeout(() => {
+        if (!agolToken) {
+            showStatus("En attente de connexion depuis Experience Builder...", "info");
+        }
+    }, 1500);
+
+    // ==========================================
+    // 2. RECHERCHE DYNAMIQUE DU SERVICE SUR AGOL
+    // ==========================================
+    async function rechercherServiceDynamiquement() {
+        try {
+            const queryUrl = `${portalUrl}/sharing/rest/search?q=title:"${encodeURIComponent(NOM_DU_REFERENTIEL)}" AND type:"Feature Service"&f=json&token=${agolToken}`;
+            const response = await fetch(queryUrl);
+            const data = await response.json();
+
+            if (data.results && data.results.length > 0) {
+                const itemId = data.results[0].id;
+                // On récupère l'URL du service de l'entité
+                featureServiceUrl = `${data.results[0].url}/0`; // Index 0 correspondant à Traces_Brutes
+                showStatus("Prêt ! Vous pouvez maintenant glisser votre GPX.", "success");
+            } else {
+                showStatus(`Impossible de localiser la couche '${NOM_DU_REFERENTIEL}' avec vos droits actuels.`, "error");
+            }
+        } catch (e) {
+            showStatus("Erreur lors de la recherche du Feature Service : " + e.message, "error");
+        }
+    }
+
+    // ==========================================
+    // 3. LOGIQUE D'INTERFACE UTILISATEUR (LOCAL)
+    // ==========================================
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'));
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        if (!agolToken || !featureServiceUrl) {
+            showStatus("Veuillez patienter pendant la connexion sécurisée à ArcGIS...", "error");
+            return;
+        }
+        if (!file.name.endsWith('.gpx')) {
+            showStatus("Fichier refusé : Seuls les fichiers .gpx sont acceptés.", "error");
+            return;
+        }
+        fileToProcess = file;
+        showStatus(`<div class="loader"></div>Analyse et contrôle anti-doublon en cours...`, "info");
+        lireEtTraiterGPX(file);
+    }
+
+    // ==========================================
+    // 4. PARSAGE DU GPX & GÉOMÉTRIE (ISO SCRIPT PYTHON)
+    // ==========================================
+    function lireEtTraiterGPX(file) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+                const points = xmlDoc.getElementsByTagName("trkpt");
+
+                if (points.length === 0) {
+                    throw new Error("Aucun point de tracé (<trkpt>) trouvé dans ce fichier GPX.");
+                }
+
+                // 1. Extraction et calculs locaux
+                let coordsWGS84 = [];
+                let distance2DKm = 0;
+                let lons = [], lats = [];
+
+                for (let i = 0; i < points.length; i++) {
+                    const lon = parseFloat(points[i].getAttribute("lon"));
+                    const lat = parseFloat(points[i].getAttribute("lat"));
+                    coordsWGS84.push([lon, lat]);
+                    lons.push(lon);
+                    lats.push(lat);
+
+                    // Formule Haversine pour la distance
+                    if (i > 0) {
+                        distance2DKm += calculerHaversine(
+                            coordsWGS84[i-1][0], coordsWGS84[i-1][1],
+                            lon, lat
+                        );
+                    }
+                }
+
+                distance2DKm = Math.round((distance2DKm / 1000) * 1000) / 1000; // Arrondi à 3 décimales
+                const bbox = {
+                    xmin: Math.min(...lons), ymin: Math.min(...lats),
+                    xmax: Math.max(...lons), ymax: Math.max(...lats)
+                };
+
+                // 2. Vérification anti-doublon (50%)
+                const doublonTrouve = await verifierDoublonArcGIS(bbox);
+                if (doublonTrouve) {
+                    showStatus(`❌ REJET : Cette trace chevauche à plus de 50% une randonnée existante.`, "error");
+                    return;
+                }
+
+                // 3. Projection mathématique locale (WGS84 -> Web Mercator 3857) - 100% gratuit
+                const pathsWebMercator = [coordsWGS84.map(pt => wgs84ToWebMercator(pt[0], pt[1]))];
+
+                // 4. Insertion via API REST
+                await insererTraceAGOL(file.name, pathsWebMercator, distance2DKm);
+
+            } catch (err) {
+                showStatus(`Erreur de lecture du fichier : ${err.message}`, "error");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ==========================================
+    // 5. FONCTIONS MATHÉMATIQUES & REPROJECTION (GRATUIT)
+    // ==========================================
+    function wgs84ToWebMercator(lon, lat) {
+        const x = lon * 20037508.34 / 180.0;
+        let y = Math.log(Math.tan((90.0 + Math.max(Math.min(lat, 85.05112878), -85.05112878)) * Math.PI / 360.0)) / (Math.PI / 180.0);
+        y = y * 20037508.34 / 180.0;
+        return [x, y];
+    }
+
+    function calculerHaversine(lon1, lat1, lon2, lat2) {
+        const R = 6371000; // Rayon de la Terre en mètres
+        const phi1 = lat1 * Math.PI / 180;
+        const phi2 = lat2 * Math.PI / 180;
+        const dPhi = (lat2 - lat1) * Math.PI / 180;
+        const dLambda = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(dPhi / 2) * Math.sin(dPhi / 2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(dLambda / 2) * Math.sin(dLambda / 2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    function calculerIntersectionBBox(b1, b2) {
+        const x_left = Math.max(b1.xmin, b2.xmin);
+        const y_bottom = Math.max(b1.ymin, b2.ymin);
+        const x_right = Math.min(b1.xmax, b2.xmax);
+        const y_top = Math.min(b1.ymax, b2.ymax);
+
+        if (x_right < x_left || y_top < y_bottom) return 0.0;
+
+        const intersectionArea = (x_right - x_left) * (y_top - y_bottom);
+        const area1 = (b1.xmax - b1.xmin) * (b1.ymax - b1.ymin);
+        const area2 = (b2.xmax - b2.xmin) * (b2.ymax - b2.ymin);
+        const minArea = Math.min(area1, area2);
+
+        return minArea > 0 ? (intersectionArea / minArea) * 100 : 0.0;
+    }
+
+    // ==========================================
+    // 6. COMMUNICATIONS REST AVEC AGOL
+    // ==========================================
+    async function verifierDoublonArcGIS(nouvelleBBox) {
+        // Query de toutes les géométries existantes
+        const queryUrl = `${featureServiceUrl}/query?where=1%3D1&outFields=nom&returnGeometry=true&outSR=4326&f=json&token=${agolToken}`;
+        const response = await fetch(queryUrl);
+        const data = await response.json();
+
+        if (!data.features) return false;
+
+        for (let feature of data.features) {
+            if (feature.geometry && feature.geometry.paths) {
+                // Calcul de la BBox du tracé existant
+                const flatPts = feature.geometry.paths.flat();
+                const lons = flatPts.map(pt => pt[0]);
+                const lats = Math.min(...flatPts.map(pt => pt[1]));
+                const existBBox = {
+                    xmin: Math.min(...lons), ymin: Math.min(flatPts.map(pt => pt[1])),
+                    xmax: Math.max(...lons), ymax: Math.max(flatPts.map(pt => pt[1]))
+                };
+
+                const tauxRecouvrement = calculerIntersectionBBox(nouvelleBBox, existBBox);
+                if (tauxRecouvrement > 50.0) {
+                    console.log(`Doublon détecté avec '${feature.attributes.nom}' (${tauxRecouvrement.toFixed(1)}%)`);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    async function insererTraceAGOL(fileName, paths, distance) {
+        const nomSansExt = fileName.replace(/\.[^/.]+$/, "");
+        
+        // Structure de l'entité ISO Schéma v7
+        const features = [{
+            "geometry": {
+                "paths": paths,
+                "spatialReference": {"wkid": 102100, "latestWkid": 3857}
+            },
+            "attributes": {
+                "nom": nomSansExt,
+                "fichier_source": fileName,
+                "pratique": "Pedestre",
+                "auteur": "Agent_Terrain_Web_Secure",
+                "id_structure": "STRUC_01",
+                "distance_2d_km": distance,
+                "statut_traitement": "a_traiter"
+            }
+        }];
+
+        const bodyData = new URLSearchParams();
+        bodyData.append("features", JSON.stringify(features));
+        bodyData.append("f", "json");
+        bodyData.append("token", agolToken);
+
+        const response = await fetch(`${featureServiceUrl}/addFeatures`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: bodyData
+        });
+
+        const result = await response.json();
+
+        if (result.addResults && result.addResults[0].success) {
+            showStatus(`✅ IMPORTATION RÉUSSIE : <strong>${fileName}</strong> (${distance} km) inséré dans Traces_Brutes (Statut : à traiter).`, "success");
+        } else {
+            const errorMsg = result.addResults ? result.addResults[0].error.description : "Erreur AGOL inconnue.";
+            showStatus(`❌ ÉCHEC : ${errorMsg}`, "error");
+        }
+    }
+
+    function showStatus(htmlContent, type) {
+        statusBox.innerHTML = htmlContent;
+        statusBox.className = "status-box status-" + type;
+        statusBox.style.display = "block";
+    }
+</script>
+
+</body>
+</html>
