@@ -209,22 +209,18 @@
     // ==========================================
     async function rechercherIDEtServiceParNom() {
         try {
-            // Requête de recherche textuelle stricte sur le titre de l'élément (Feature Service)
             const queryUrl = `${portalUrl}/sharing/rest/search?q=title:"${encodeURIComponent(NOM_DU_REFERENTIEL)}" AND type:"Feature Service"&f=json&token=${agolToken}`;
             const response = await fetch(queryUrl);
             const searchData = await response.json();
 
             if (searchData.results && searchData.results.length > 0) {
-                // On extrait l'URL de service renvoyée par le premier résultat valide
                 const rawServiceUrl = searchData.results[0].url;
-                
-                // On cible spécifiquement la couche index 0 (Traces_Brutes)
                 featureServiceUrl = `${rawServiceUrl}/0`;
                 
                 dropZone.classList.add('active'); 
                 showStatus("Prêt ! Vous pouvez glisser-déposer ou sélectionner votre GPX.", "success");
             } else {
-                showStatus(`Couche introuvable sur ce compte. Assurez-vous que l'élément s'appelle exactement : "${NOM_DU_REFERENTIEL}" et qu'il est partagé avec vous.`, "error");
+                showStatus(`Couche introuvable sur ce compte. Assurez-vous que l'élément s'appelle exactement : "${NOM_DU_REFERENTIEL}"`, "error");
             }
         } catch (e) {
             showStatus("Erreur lors de la recherche automatique de l'élément : " + e.message, "error");
@@ -276,9 +272,10 @@
                 distance2DKm = Math.round((distance2DKm / 1000) * 1000) / 1000;
                 const bbox = { xmin: Math.min(...lons), ymin: Math.min(...lats), xmax: Math.max(...lons), ymax: Math.max(...lats) };
 
+                // Contrôle Doublon augmenté à 85% pour plus de souplesse sur le terrain
                 const doublonTrouve = await verifierDoublonArcGIS(bbox);
                 if (doublonTrouve) {
-                    showStatus(`❌ REJET : Cette trace chevauche à plus de 50% une randonnée existante.`, "error");
+                    showStatus(`❌ REJET : Cette trace chevauche à plus de 85% une randonnée existante.`, "error");
                     return;
                 }
 
@@ -325,7 +322,9 @@
                 const flatPts = feature.geometry.paths.flat();
                 const lons = flatPts.map(pt => pt[0]), lats = flatPts.map(pt => pt[1]);
                 const existBBox = { xmin: Math.min(...lons), ymin: Math.min(...lats), xmax: Math.max(...lons), ymax: Math.max(...lats) };
-                if (calculerIntersectionBBox(nouvelleBBox, existBBox) > 50.0) return true;
+                
+                // Tolérance configurée à 85.0 %
+                if (calculerIntersectionBBox(nouvelleBBox, existBBox) > 85.0) return true;
             }
         }
         return false;
@@ -355,7 +354,7 @@
         const result = await response.json();
 
         if (result.addResults && result.addResults[0].success) {
-            showStatus(`✅ TRACE IMPORTÉE : <strong>${fileName}</strong> (${distance} km) intégrée dans Traces_Brutes !`, "success");
+            showStatus(`... TRACE IMPORTÉE : <strong>${fileName}</strong> (${distance} km) intégrée dans Traces_Brutes !`, "success");
         } else {
             showStatus(`❌ Échec de l'insertion.`, "error");
         }
