@@ -128,24 +128,28 @@
     // 1. CAPTURE DU TOKEN DEPUIS EXPERIENCE BUILDER (OAuth2 PostMessage)
     // ==========================================
     window.addEventListener("message", (event) => {
-        // Sécurité : n'accepter que les origines de confiance (Esri)
-        if (!event.origin.endsWith(".arcgis.com")) return;
+        // Sécurité élargie : On accepte experience.arcgis.com et les sous-domaines maps.arcgis.com
+        if (!event.origin.includes(".arcgis.com")) return;
 
         const messageData = event.data;
-        if (messageData && messageData.type === "AUTHENTICATION") {
-            agolToken = messageData.payload.token;
-            portalUrl = messageData.payload.portalUrl || "https://www.arcgis.com";
-            showStatus("Authentification réussie ! Récupération de l'ID du service...", "info");
-            rechercherServiceDynamiquement();
+        
+        // Esri envoie parfois les données directement ou sous forme de chaîne JSON
+        let data = messageData;
+        if (typeof messageData === "string") {
+            try { data = JSON.parse(messageData); } catch(e) { return; }
         }
-    });
 
-    // Optionnel : Mode test autonome si hors iframe (permet d'entrer un token manuellement)
-    setTimeout(() => {
-        if (!agolToken) {
-            showStatus("En attente de connexion depuis Experience Builder...", "info");
+        // On intercepte le token peu importe le type de payload envoyé par ExB
+        if (data && (data.type === "AUTHENTICATION" || data.token || (data.payload && data.payload.token))) {
+            agolToken = data.token || (data.payload ? data.payload.token : null);
+            portalUrl = data.portalUrl || (data.payload ? data.payload.portalUrl : "https://www.arcgis.com");
+            
+            if (agolToken) {
+                showStatus("✅ Session synchronisée avec Experience Builder ! Recherche du référentiel...", "info");
+                rechercherServiceDynamiquement();
+            }
         }
-    }, 1500);
+    }
 
     // ==========================================
     // 2. RECHERCHE DYNAMIQUE DU SERVICE SUR AGOL
@@ -167,7 +171,7 @@
         } catch (e) {
             showStatus("Erreur lors de la recherche du Feature Service : " + e.message, "error");
         }
-    }
+    }).
 
     // ==========================================
     // 3. LOGIQUE D'INTERFACE UTILISATEUR (LOCAL)
