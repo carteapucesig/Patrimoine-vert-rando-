@@ -3,288 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Importateur Local GPX</title>
+    <title>Importateur RPV</title>
     <style>
         body {
-            font-family: "Avenir Next", "Helvetica Neue", Arial, sans-serif;
-            background-color: #f8f9fa;
-            color: #323232;
+            font-family: "Montserrat", sans-serif;
+            background-color: #F5F4EE; /* Crème RPV */
+            color: #3B3B3B;
             margin: 0;
-            padding: 10px;
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            box-sizing: border-box;
         }
         .container {
             background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(31, 77, 46, 0.1);
+            padding: 30px;
             width: 100%;
             max-width: 450px;
             text-align: center;
+            border: 1px solid #E8E5D9;
         }
-        h2 { margin-top: 0; color: #007ac2; font-size: 20px; }
-        p.subtitle { color: #6a6a6a; font-size: 13px; margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #1F4D2E; font-size: 24px; font-weight: 700; }
+        p.subtitle { color: #666; font-size: 14px; margin-bottom: 25px; }
         
-        /* Formulaire de connexion intégré */
         .auth-form {
-            background-color: #f4f9fc;
-            border: 1px solid #bce1f6;
-            border-radius: 6px;
-            padding: 15px;
+            background-color: #E8F5E9;
+            border: 1px solid #C8E6C9;
+            border-radius: 8px;
+            padding: 20px;
             margin-bottom: 20px;
             text-align: left;
         }
-        .auth-form label {
-            display: block;
-            font-size: 12px;
-            font-weight: bold;
-            color: #005e95;
-            margin-bottom: 5px;
-        }
-        .auth-form input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 12px;
-            border: 1px solid #bce1f6;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 13px;
-        }
+        .auth-form label { display: block; font-size: 12px; font-weight: bold; color: #1F4D2E; margin-bottom: 5px; }
+        .auth-form input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #A5D6A7; border-radius: 4px; box-sizing: border-box; }
+        
         .btn-submit {
-            background-color: #007ac2;
+            background-color: #2E7D32;
             color: white;
             border: none;
-            padding: 10px 15px;
-            font-size: 13px;
-            font-weight: bold;
+            padding: 12px 15px;
+            font-weight: 600;
             border-radius: 4px;
             cursor: pointer;
             width: 100%;
-            transition: background-color 0.2s;
+            transition: background 0.3s;
         }
-        .btn-submit:hover { background-color: #005e95; }
+        .btn-submit:hover { background-color: #1F4D2E; }
 
-        /* Zone de Drag and Drop */
         .drop-zone {
-            border: 2px dashed #007ac2;
-            border-radius: 6px;
-            padding: 30px 15px;
-            background-color: #fafafa;
+            border: 2px dashed #2E7D32;
+            border-radius: 8px;
+            padding: 40px 20px;
+            background-color: #FAFAFA;
             cursor: pointer;
-            transition: background-color 0.2s;
-            margin-bottom: 15px;
-            opacity: 0.4;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            opacity: 0.5;
             pointer-events: none;
         }
-        .drop-zone.active {
-            opacity: 1;
-            pointer-events: auto;
-            background-color: #f4f9fc;
-        }
-        .drop-zone p { margin: 0; font-size: 14px; color: #005e95; font-weight: 500; }
-        .drop-zone span { font-size: 11px; color: #6a6a6a; display: block; margin-top: 5px; }
-        input[type="file"] { display: none; }
-
-        .status-box {
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 13px;
-            margin-top: 10px;
-            display: none;
-            text-align: left;
-            line-height: 1.4;
-        }
-        .status-info { background-color: #e2f1fa; color: #005e95; border-left: 4px solid #007ac2; }
-        .status-success { background-color: #d1e7dd; color: #0f5132; border-left: 4px solid #198754; }
-        .status-error { background-color: #f8d7da; color: #842029; border-left: 4px solid #dc3545; }
+        .drop-zone.active { opacity: 1; pointer-events: auto; background-color: #E8F5E9; }
+        .drop-zone p { margin: 0; color: #1F4D2E; font-weight: 600; }
         
-        .loader {
-            display: inline-block; width: 15px; height: 15px;
-            border: 2px solid rgba(0,122,194,.3); border-radius: 50%;
-            border-top-color: #007ac2; animation: spin 1s ease-in-out infinite;
-            vertical-align: middle; margin-right: 8px;
-        }
+        .status-box { padding: 15px; border-radius: 6px; font-size: 13px; margin-top: 15px; display: none; text-align: left; }
+        .status-success { background-color: #E8F5E9; color: #1F4D2E; border-left: 5px solid #2E7D32; }
+        .status-error { background-color: #FFEBEE; color: #C62828; border-left: 5px solid #C62828; }
+        
+        .loader { display: inline-block; width: 15px; height: 15px; border: 2px solid #E8F5E9; border-top-color: #2E7D32; border-radius: 50%; animation: spin 1s infinite; margin-right: 10px; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Importateur de traces GPX</h2>
-    <p class="subtitle">Sécurisé, sans pop-up de connexion externe.</p>
+    <h2>Importateur RPV</h2>
+    <p class="subtitle">Gestion des traces communales</p>
 
-    <!-- Étape 1 : Formulaire de connexion direct -->
     <div class="auth-form" id="authForm">
-        <label for="portalUrl">Portail ArcGIS</label>
+        <label>Portail ArcGIS</label>
         <input type="text" id="portalUrl" value="https://cartoasp.maps.arcgis.com">
-
-        <label for="username">Identifiant</label>
+        <label>Identifiant</label>
         <input type="text" id="username" value="yoann.gerard8">
-
-        <label for="password">Mot de passe</label>
-        <input type="password" id="password" placeholder="Saisissez votre mot de passe">
-
+        <label>Mot de passe</label>
+        <input type="password" id="password" placeholder="••••••••">
         <button class="btn-submit" onclick="genererTokenDirect()">Se connecter</button>
     </div>
 
-    <!-- Étape 2 : Envoyer le fichier -->
     <div class="drop-zone" id="dropZone">
-        <p>Glissez-déposez votre fichier GPX ici</p>
-        <span>ou cliquez pour parcourir votre ordinateur</span>
-        <input type="file" id="fileInput" accept=".gpx">
+        <p>Glissez-déposez le fichier de trace</p>
     </div>
-
+    <input type="file" id="fileInput" style="display:none">
     <div id="statusBox" class="status-box"></div>
 </div>
 
 <script>
-    // Le nom technique de la couche d'entités recherchée
     const NOM_DU_REFERENTIEL = "RPV_StMartinSteCatherine_v1";
-    
-    let agolToken = null;
-    let featureServiceUrl = null;
-    let portalUrl = "";
+    let agolToken, featureServiceUrl, portalUrl;
 
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-    const statusBox = document.getElementById('statusBox');
-    const authForm = document.getElementById('authForm');
-
-    // ==========================================
-    // GÉNÉRATION DU TOKEN VIA APPEL REST DIRECT
-    // ==========================================
     async function genererTokenDirect() {
         const portalInput = document.getElementById('portalUrl').value.trim();
         const usernameInput = document.getElementById('username').value.trim();
         const passwordInput = document.getElementById('password').value;
-
-        if (!passwordInput) {
-            showStatus("Veuillez saisir votre mot de passe.", "error");
-            return;
-        }
-
-        showStatus(`<div class="loader"></div>Génération du jeton sécurisé auprès d'ArcGIS...`, "info");
+        showStatus(`<div class="loader"></div>Authentification en cours...`, "info");
         portalUrl = portalInput.replace(/\/$/, ""); 
-
         try {
-            const tokenUrl = `${portalUrl}/sharing/rest/generateToken`;
-            
-            const params = new URLSearchParams();
-            params.append("username", usernameInput);
-            params.append("password", passwordInput);
-            params.append("client", "referer");
-            params.append("referer", window.location.origin);
-            params.append("expiration", "120"); 
-            params.append("f", "json");
-
-            const response = await fetch(tokenUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: params
-            });
-
+            const params = new URLSearchParams({ "username": usernameInput, "password": passwordInput, "client": "referer", "referer": window.location.origin, "expiration": "120", "f": "json" });
+            const response = await fetch(`${portalUrl}/sharing/rest/generateToken`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params });
             const data = await response.json();
-
             if (data.token) {
                 agolToken = data.token;
-                authForm.style.display = "none"; 
-                showStatus("✅ Authentification réussie ! Recherche de votre référentiel par son nom...", "info");
+                document.getElementById('authForm').style.display = "none";
                 rechercherIDEtServiceParNom();
-            } else if (data.error) {
-                showStatus(`Erreur d'authentification : ${data.error.message}`, "error");
-            } else {
-                showStatus("Impossible de se connecter. Vérifiez vos identifiants.", "error");
-            }
-        } catch (e) {
-            showStatus("Erreur réseau de connexion : " + e.message, "error");
-        }
+            } else { showStatus("Erreur d'authentification.", "error"); }
+        } catch (e) { showStatus("Erreur de connexion.", "error"); }
     }
 
-    // ==========================================
-    // RECHERCHE PAR NOM POUR OBTENIR L'URL PHYSIQUE DU SERVICE (100% Transposable)
-    // ==========================================
     async function rechercherIDEtServiceParNom() {
-        try {
-            const queryUrl = `${portalUrl}/sharing/rest/search?q=title:"${encodeURIComponent(NOM_DU_REFERENTIEL)}" AND type:"Feature Service"&f=json&token=${agolToken}`;
-            const response = await fetch(queryUrl);
-            const searchData = await response.json();
-
-            if (searchData.results && searchData.results.length > 0) {
-                const rawServiceUrl = searchData.results[0].url;
-                featureServiceUrl = `${rawServiceUrl}/0`;
-                
-                dropZone.classList.add('active'); 
-                showStatus("Prêt ! Vous pouvez glisser-déposer ou sélectionner votre GPX.", "success");
-            } else {
-                showStatus(`Couche introuvable sur ce compte. Assurez-vous que l'élément s'appelle exactement : "${NOM_DU_REFERENTIEL}"`, "error");
-            }
-        } catch (e) {
-            showStatus("Erreur lors de la recherche automatique de l'élément : " + e.message, "error");
-        }
+        const queryUrl = `${portalUrl}/sharing/rest/search?q=title:"${encodeURIComponent(NOM_DU_REFERENTIEL)}" AND type:"Feature Service"&f=json&token=${agolToken}`;
+        const searchData = await (await fetch(queryUrl)).json();
+        if (searchData.results?.length > 0) {
+            featureServiceUrl = `${searchData.results[0].url}/0`;
+            document.getElementById('dropZone').classList.add('active'); 
+            showStatus("Connecté au RPV. Prêt pour l'import.", "success");
+        } else { showStatus("Couche introuvable.", "error"); }
     }
 
-    // ==========================================
-    // INTERFACE ET GESTION DES FICHIERS
-    // ==========================================
-    dropZone.addEventListener('click', () => { if(featureServiceUrl) fileInput.click(); });
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); });
-    dropZone.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]); });
-    fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    dropZone.onclick = () => fileInput.click();
+    dropZone.ondragover = (e) => e.preventDefault();
+    dropZone.ondrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
+    fileInput.onchange = (e) => handleFile(e.target.files[0]);
 
     function handleFile(file) {
-        if (!file.name.endsWith('.gpx')) { showStatus("Seuls les fichiers .gpx sont acceptés.", "error"); return; }
-        showStatus(`<div class="loader"></div>Analyse géographique et contrôle anti-doublon...`, "info");
-        lireEtTraiterGPX(file);
-    }
-
-    // ==========================================
-    // ANALYSE DU GPX ET CALCULS LOCAUX
-    // ==========================================
-    function lireEtTraiterGPX(file) {
+        showStatus(`<div class="loader"></div>Traitement...`, "info");
         const reader = new FileReader();
         reader.onload = async function(e) {
             try {
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-                const points = xmlDoc.getElementsByTagName("trkpt");
-
-                if (points.length === 0) throw new Error("Aucun point de tracé trouvé dans le GPX.");
-
-                let coordsWGS84 = [];
-                let distance2DKm = 0;
-                let lons = [], lats = [];
-
+                const points = new DOMParser().parseFromString(e.target.result, "text/xml").getElementsByTagName("trkpt");
+                if (points.length === 0) throw new Error("Fichier invalide ou vide.");
+                let coordsWGS84 = [], distance = 0;
                 for (let i = 0; i < points.length; i++) {
-                    const lon = parseFloat(points[i].getAttribute("lon"));
-                    const lat = parseFloat(points[i].getAttribute("lat"));
-                    coordsWGS84.push([lon, lat]);
-                    lons.push(lon); lats.push(lat);
-
-                    if (i > 0) {
-                        distance2DKm += calculerHaversine(coordsWGS84[i-1][0], coordsWGS84[i-1][1], lon, lat);
-                    }
+                    const pt = [parseFloat(points[i].getAttribute("lon")), parseFloat(points[i].getAttribute("lat"))];
+                    coordsWGS84.push(pt);
+                    if (i > 0) distance += calculerHaversine(coordsWGS84[i-1][0], coordsWGS84[i-1][1], pt[0], pt[1]);
                 }
-
-                distance2DKm = Math.round((distance2DKm / 1000) * 1000) / 1000;
-                const bbox = { xmin: Math.min(...lons), ymin: Math.min(...lats), xmax: Math.max(...lons), ymax: Math.max(...lats) };
-
-                // Contrôle Doublon augmenté à 85% pour plus de souplesse sur le terrain
-                const doublonTrouve = await verifierDoublonArcGIS(bbox);
-                if (doublonTrouve) {
-                    showStatus(`❌ REJET : Cette trace chevauche à plus de 85% une randonnée existante.`, "error");
-                    return;
-                }
-
-                const pathsWebMercator = [coordsWGS84.map(pt => wgs84ToWebMercator(pt[0], pt[1]))];
-                await insererTraceAGOL(file.name, pathsWebMercator, distance2DKm);
-
-            } catch (err) {
-                showStatus(`Erreur : ${err.message}`, "error");
-            }
+                insererTraceAGOL(file.name, [coordsWGS84.map(pt => wgs84ToWebMercator(pt[0], pt[1]))], Math.round((distance/1000)*1000)/1000);
+            } catch (err) { showStatus("Erreur : " + err.message, "error"); }
         };
         reader.readAsText(file);
     }
@@ -297,74 +164,20 @@
 
     function calculerHaversine(lon1, lat1, lon2, lat2) {
         const R = 6371000;
-        const phi1 = lat1 * Math.PI / 180, phi2 = lat2 * Math.PI / 180;
-        const dPhi = (lat2 - lat1) * Math.PI / 180, dLambda = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dPhi/2) * Math.sin(dPhi/2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLambda/2) * Math.sin(dLambda/2);
-        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-    }
-
-    function calculerIntersectionBBox(b1, b2) {
-        const x_left = Math.max(b1.xmin, b2.xmin), y_bottom = Math.max(b1.ymin, b2.ymin);
-        const x_right = Math.min(b1.xmax, b2.xmax), y_top = Math.min(b1.ymax, b2.ymax);
-        if (x_right < x_left || y_top < y_bottom) return 0.0;
-        const intersectionArea = (x_right - x_left) * (y_top - y_bottom);
-        const minArea = Math.min((b1.xmax - b1.xmin) * (b1.ymax - b1.ymin), (b2.xmax - b2.xmin) * (b2.ymax - b2.ymin));
-        return minArea > 0 ? (intersectionArea / minArea) * 100 : 0.0;
-    }
-
-    async function verifierDoublonArcGIS(nouvelleBBox) {
-        const response = await fetch(`${featureServiceUrl}/query?where=1%3D1&outFields=nom&returnGeometry=true&outSR=4326&f=json&token=${agolToken}`);
-        const data = await response.json();
-        if (!data.features) return false;
-
-        for (let feature of data.features) {
-            if (feature.geometry && feature.geometry.paths) {
-                const flatPts = feature.geometry.paths.flat();
-                const lons = flatPts.map(pt => pt[0]), lats = flatPts.map(pt => pt[1]);
-                const existBBox = { xmin: Math.min(...lons), ymin: Math.min(...lats), xmax: Math.max(...lons), ymax: Math.max(...lats) };
-                
-                // Tolérance configurée à 85.0 %
-                if (calculerIntersectionBBox(nouvelleBBox, existBBox) > 85.0) return true;
-            }
-        }
-        return false;
+        const dPhi = (lat2-lat1)*Math.PI/180, dLambda = (lon2-lon1)*Math.PI/180;
+        const a = Math.sin(dPhi/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLambda/2)**2;
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     }
 
     async function insererTraceAGOL(fileName, paths, distance) {
-        const nomSansExt = fileName.replace(/\.[^/.]+$/, "");
-        const features = [{
-            "geometry": { "paths": paths, "spatialReference": {"wkid": 102100} },
-            "attributes": {
-                "nom": nomSansExt, "fichier_source": fileName, "pratique": "Pedestre",
-                "auteur": "Agent_Terrain_Maquette", "id_structure": "STRUC_01",
-                "distance_2d_km": distance, "statut_traitement": "a_traiter"
-            }
-        }];
-
-        const bodyData = new URLSearchParams();
-        bodyData.append("features", JSON.stringify(features));
-        bodyData.append("f", "json");
-        bodyData.append("token", agolToken);
-
-        const response = await fetch(`${featureServiceUrl}/addFeatures`, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: bodyData
-        });
-        const result = await response.json();
-
-        if (result.addResults && result.addResults[0].success) {
-            showStatus(`... TRACE IMPORTÉE : <strong>${fileName}</strong> (${distance} km) intégrée dans Traces_Brutes !`, "success");
-        } else {
-            showStatus(`❌ Échec de l'insertion.`, "error");
-        }
+        const features = [{ "geometry": { "paths": paths, "spatialReference": {"wkid": 102100} }, "attributes": { "nom": fileName, "pratique": "Pedestre", "distance_2d_km": distance, "statut_traitement": "a_traiter" } }];
+        const bodyData = new URLSearchParams({ "features": JSON.stringify(features), "f": "json", "token": agolToken });
+        const res = await (await fetch(`${featureServiceUrl}/addFeatures`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: bodyData })).json();
+        if (res.addResults?.[0]?.success) showStatus(`✅ Import réussi : ${fileName}`, "success");
+        else showStatus("❌ Erreur de publication sur ArcGIS.", "error");
     }
 
-    function showStatus(htmlContent, type) {
-        statusBox.innerHTML = htmlContent;
-        statusBox.className = "status-box status-" + type;
-        statusBox.style.display = "block";
-    }
+    function showStatus(html, type) { statusBox.innerHTML = html; statusBox.className = "status-box status-" + type; statusBox.style.display = "block"; }
 </script>
 </body>
 </html>
