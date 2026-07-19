@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide d'Apprentissage - Référentiel Patrimoine Vert</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Variables de la charte graphique RPV */
+        :root {
+            --rpv-dark: #1F4D2E;
+            --rpv-main: #2E7D32;
+            --rpv-light: #66BB6A;
+            --rpv-very-light: #A5D6A7;
+            --rpv-beige: #E8E5D9;
+            --rpv-text: #3B3B3B;
+        }
+
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Roboto', sans-serif;
+            color: var(--rpv-text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Styles typographiques */
+        h1, h2, h3, h4, .font-title {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Format Page A4 */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            margin: 0 auto 30px auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .page-content {
+            flex-grow: 1;
+            padding: 20mm 20mm 25mm 20mm;
+        }
+
+        /* Page de garde */
+        .cover-page {
+            background-color: var(--rpv-beige);
+            /* Motif simulé de courbes topographiques douces */
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M-50 100 Q 50 50 150 100 T 350 100' fill='none' stroke='%233B3B3B' stroke-width='0.5' stroke-opacity='0.15'/%3E%3Cpath d='M-50 120 Q 70 80 170 140 T 350 120' fill='none' stroke='%233B3B3B' stroke-width='0.5' stroke-opacity='0.1'/%3E%3Cpath d='M-50 80 Q 40 20 140 80 T 350 80' fill='none' stroke='%233B3B3B' stroke-width='0.5' stroke-opacity='0.1'/%3E%3Cpath d='M-50 150 Q 80 100 180 160 T 350 150' fill='none' stroke='%233B3B3B' stroke-width='0.5' stroke-opacity='0.15'/%3E%3C/svg%3E");
+            background-size: 300px;
+        }
+
+        /* En-tête et Pied de page */
+        .page-header {
+            height: 25mm;
+            padding: 10mm 20mm 0 20mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--rpv-light);
+            margin-bottom: 10mm;
+        }
+        
+        .page-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20mm;
+            padding: 0 20mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e5e7eb;
+            font-size: 10pt;
+            color: #6b7280;
+            background: white;
+            box-sizing: border-box;
+        }
+
+        /* Titres dans le contenu */
+        .content h1 {
+            color: var(--rpv-dark);
+            font-size: 20pt;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 15pt;
+            border-bottom: 3px solid var(--rpv-main);
+            padding-bottom: 5px;
+        }
+        .content h2 {
+            color: var(--rpv-main);
+            font-size: 14pt;
+            font-weight: 600;
+            margin-top: 20pt;
+            margin-bottom: 10pt;
+        }
+        .content h3 {
+            color: var(--rpv-light);
+            font-size: 12pt;
+            font-weight: 600;
+            font-style: italic;
+            margin-top: 15pt;
+            margin-bottom: 8pt;
+        }
+        .content p {
+            font-size: 10.5pt;
+            line-height: 1.6;
+            margin-bottom: 10pt;
+            text-align: justify;
+        }
+        
+        .content ul {
+            list-style-type: disc;
+            padding-left: 20pt;
+            margin-bottom: 12pt;
+            font-size: 10.5pt;
+            line-height: 1.6;
+            text-align: justify;
+        }
+        .content li {
+            margin-bottom: 6pt;
+        }
+
+        /* Tableaux */
+        .rpv-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15pt 0;
+            font-size: 10pt;
+        }
+        .rpv-table th {
+            background-color: var(--rpv-dark);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid var(--rpv-dark);
+        }
+        .rpv-table td {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+        }
+        .rpv-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        /* Encadrés */
+        .callout {
+            padding: 12pt;
+            margin: 15pt 0;
+            border-radius: 4px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .callout-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 10.5pt;
+            margin-bottom: 4px;
+        }
+        .callout p {
+            margin: 0;
+            font-size: 10pt;
+            text-align: left;
+        }
+        
+        .callout-info {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+        }
+        .callout-info .callout-title, .callout-info i { color: #2563eb; }
+
+        .callout-attention {
+            background-color: #fff7ed;
+            border-left: 4px solid #f97316;
+        }
+        .callout-attention .callout-title, .callout-attention i { color: #ea580c; }
+
+        .callout-practice {
+            background-color: var(--rpv-beige);
+            border-left: 4px solid var(--rpv-main);
+        }
+        .callout-practice .callout-title, .callout-practice i { color: var(--rpv-dark); }
+
+        /* Bandeau Chapitre */
+        .chapter-banner {
+            background-color: var(--rpv-main);
+            color: white;
+            padding: 25pt 20pt;
+            margin: -20mm -20mm 15mm -20mm; /* Pull to edges */
+            position: relative;
+            overflow: hidden;
+        }
+        .chapter-banner h1 {
+            color: white !important;
+            border: none !important;
+            margin: 0;
+            font-size: 24pt;
+            position: relative;
+            z-index: 2;
+        }
+        .chapter-banner .chapter-num {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--rpv-very-light);
+            font-size: 12pt;
+            font-weight: 700;
+            margin-bottom: 5px;
+            display: block;
+            position: relative;
+            z-index: 2;
+        }
+        .banner-icon {
+            position: absolute;
+            right: 20pt;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--rpv-dark);
+            opacity: 0.3;
+            width: 100px;
+            height: 100px;
+            z-index: 1;
+        }
+
+        /* Impression */
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .a4-page { 
+                margin: 0; 
+                box-shadow: none; 
+                page-break-after: always;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre d'outils (Non imprimée) -->
+    <div class="no-print fixed top-4 right-4 flex gap-2 z-50">
+        <button onclick="window.print()" class="bg-[#2E7D32] hover:bg-[#1F4D2E] text-white px-4 py-2 rounded shadow font-title font-semibold flex items-center gap-2 transition-colors">
+            <i data-lucide="printer" class="w-5 h-5"></i>
+            Imprimer / PDF
+        </button>
+    </div>
+
+    <!-- PAGE 1 : PAGE DE GARDE -->
+    <div class="a4-page cover-page flex justify-center items-center">
+        <div class="w-full max-w-lg bg-white/90 backdrop-blur-sm p-12 rounded-xl shadow-lg border border-white/50 text-center relative z-10">
+            <!-- Logo RPV -->
+            <div class="mx-auto w-32 h-32 bg-[#1F4D2E] rounded-full flex items-center justify-center mb-8 shadow-inner">
+                <span class="text-white font-title font-bold text-4xl tracking-wider">RPV</span>
+            </div>
+            
+            <h2 class="font-title text-[#2E7D32] font-semibold tracking-widest text-sm mb-2 uppercase">Guide d'Apprentissage</h2>
+            <h1 class="font-title text-[#1F4D2E] font-bold text-3xl mb-6 leading-tight">Administration et<br>Alimentation du RPV</h1>
+            
+            <div class="w-16 h-1 bg-[#66BB6A] mx-auto mb-6"></div>
+            
+            <p class="font-body text-[#3B3B3B] text-lg mb-8">Projet Pilote : Saint-Martin-Sainte-Catherine</p>
+            
+            <div class="flex justify-center gap-4 text-[#2E7D32]">
+                <i data-lucide="map" class="w-6 h-6"></i>
+                <i data-lucide="database" class="w-6 h-6"></i>
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+        </div>
+        <div class="absolute bottom-10 left-0 w-full text-center">
+            <p class="font-title text-[#1F4D2E] font-semibold text-sm">Connaître. Préserver. Valoriser. Partager.</p>
+        </div>
+    </div>
+
+    <!-- PAGE 2 : SOMMAIRE -->
+    <div class="a4-page">
+        <div class="page-header">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#1F4D2E] rounded flex items-center justify-center text-white font-title font-bold text-xs">RPV</div>
+                <span class="font-title text-[#1F4D2E] font-semibold text-sm">Sommaire</span>
+            </div>
+        </div>
+        <div class="page-content content">
+            <h1>Sommaire</h1>
+            
+            <div class="mt-8 space-y-4">
+                <div class="flex items-center">
+                    <span class="font-title font-semibold text-[#1F4D2E] w-6">1.</span>
+                    <a href="#" class="font-body font-semibold text-[#3B3B3B] hover:text-[#2E7D32] flex-grow border-b border-dotted border-gray-300 relative top-1 mx-2">
+                        <span class="bg-white pr-2 relative -top-1">Vision Stratégique et Objectifs du Projet RPV</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center">
+                    <span class="font-title font-semibold text-[#1F4D2E] w-6">2.</span>
+                    <a href="#" class="font-body font-semibold text-[#3B3B3B] hover:text-[#2E7D32] flex-grow border-b border-dotted border-gray-300 relative top-1 mx-2">
+                        <span class="bg-white pr-2 relative -top-1">Architecture de la Donnée : Classes d'entités</span>
+                    </a>
+                </div>
+
+                <div class="flex items-center">
+                    <span class="font-title font-semibold text-[#1F4D2E] w-6">3.</span>
+                    <a href="#" class="font-body font-semibold text-[#3B3B3B] hover:text-[#2E7D32] flex-grow border-b border-dotted border-gray-300 relative top-1 mx-2">
+                        <span class="bg-white pr-2 relative -top-1">L'Interface d'Administration (Back-Office)</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center">
+                    <span class="font-title font-semibold text-[#1F4D2E] w-6">4.</span>
+                    <a href="#" class="font-body font-semibold text-[#3B3B3B] hover:text-[#2E7D32] flex-grow border-b border-dotted border-gray-300 relative top-1 mx-2">
+                        <span class="bg-white pr-2 relative -top-1">Alimentation du Réseau : Du GPX au Tronçon</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center">
+                    <span class="font-title font-semibold text-[#1F4D2E] w-6">5.</span>
+                    <a href="#" class="font-body font-semibold text-[#3B3B3B] hover:text-[#2E7D32] flex-grow border-b border-dotted border-gray-300 relative top-1 mx-2">
+                        <span class="bg-white pr-2 relative -top-1">Le Moissonneur de Patrimoine et d'Équipements (OSM)</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center">
+                    <span class="font-title font-semibold text-[#1F4D2E] w-6">6.</span>
+                    <a href="#" class="font-body font-semibold text-[#3B3B3B] hover:text-[#2E7D32] flex-grow border-b border-dotted border-gray-300 relative top-1 mx-2">
+                        <span class="bg-white pr-2 relative -top-1">Signalements et Maintenance : Gouvernance Participative</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center">
+                    <span class="font-title font-semibold text-[#1F4D2E] w-6">7.</span>
+                    <a href="#" class="font-body font-semibold text-[#3B3B3B] hover:text-[#2E7D32] flex-grow border-b border-dotted border-gray-300 relative top-1 mx-2">
+                        <span class="bg-white pr-2 relative -top-1">Gouvernance et Règles Métier</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="page-footer">
+            <span>Guide d'Apprentissage RPV - Saint-Martin-Sainte-Catherine</span>
+        </div>
+    </div>
+
+    <!-- PAGE 3 : CHAPITRE 1 -->
+    <div class="a4-page">
+        <div class="page-header">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#1F4D2E] rounded flex items-center justify-center text-white font-title font-bold text-xs">RPV</div>
+                <span class="font-title text-[#1F4D2E] font-semibold text-sm">1. Vision Stratégique</span>
+            </div>
+        </div>
+        
+        <div class="page-content content">
+            <div class="chapter-banner">
+                <i data-lucide="eye" class="banner-icon"></i>
+                <span class="chapter-num">CHAPITRE 1</span>
+                <h1>Vision Stratégique et Objectifs du Projet RPV</h1>
+            </div>
+
+            <p>Le projet pilote de Saint-Martin-Sainte-Catherine marque une rupture avec les méthodes de gestion traditionnelles. En déployant le Référentiel Patrimoine Vert (RPV), la commune engage une transition vers la <strong>souveraineté numérique territoriale</strong>. Il s'agit de transformer un patrimoine informel — sentiers connus des seuls habitués et richesses locales dispersées — en une infrastructure de données structurée, documentée et pérenne.</p>
+            
+            <p>L'ambition architecturale est claire : passer d'une connaissance "orale" à un actif numérique valorisable pour "Connaître, Préserver, Valoriser et Partager".</p>
+
+            <h2>Analyse du Diagnostic et Gouvernance</h2>
+            <p>Le RPV répond à trois failles structurelles identifiées lors du diagnostic :</p>
+            <ul>
+                <li><strong>Fragmentation des données :</strong> L'absence de carte unifiée empêche une vision transversale de l'offre territoriale.</li>
+                <li><strong>Déficit de sécurité :</strong> L'absence de flux d'information dynamique prive les usagers d'alertes critiques (zones à risque, état du balisage).</li>
+                <li><strong>Maintenance réactive :</strong> L'entretien complexe, faute d'outils de remontée, pénalise la réactivité des agents communaux.</li>
+            </ul>
+            
+            <h2>Les Quatre Missions de la Donnée</h2>
+            <p>Le RPV ne se contente pas de stocker des points ; il transforme la donnée brute en valeur d'usage citoyenne :</p>
+            <ul>
+                <li><strong>Connaître :</strong> Inventaire exhaustif des classes d'entités linéaires et ponctuelles.</li>
+                <li><strong>Préserver :</strong> Monitoring de l'usure pour une maintenance éco-responsable ciblée.</li>
+                <li><strong>Valoriser :</strong> Médiation numérique du patrimoine (faune, flore, bâti) pour l'attractivité.</li>
+                <li><strong>Partager :</strong> Diffusion multicanale via une interface web-app réactive et sans coût de licence tiers.</li>
+            </ul>
+
+            <div class="callout callout-info mt-6">
+                <div class="pt-1"><i data-lucide="shield-check"></i></div>
+                <div>
+                    <div class="callout-title">Souveraineté des données</div>
+                    <p>La commune demeure l'<strong>unique propriétaire</strong> de ses données. La réussite de ce projet repose sur la capacité des référents à appliquer rigoureusement les règles de gestion définies dans ce guide.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="page-footer">
+            <span>Guide d'Apprentissage RPV - Saint-Martin-Sainte-Catherine</span>
+        </div>
+    </div>
+
+    <!-- PAGE 4 : CHAPITRE 2 & 3 -->
+    <div class="a4-page">
+        <div class="page-header">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#1F4D2E] rounded flex items-center justify-center text-white font-title font-bold text-xs">RPV</div>
+                <span class="font-title text-[#1F4D2E] font-semibold text-sm">2. Architecture & 3. Back-Office</span>
+            </div>
+        </div>
+        
+        <div class="page-content content">
+            
+            <h1>2. Architecture de la Donnée : Classes d'entités</h1>
+            <p>Une structure de données normée est le garant de l'interopérabilité. En tant qu'architecte, nous avons privilégié un modèle <strong>"Z-aware"</strong> (gestion de l'altitude) pour assurer la précision topographique sans dépendre de solutions propriétaires coûteuses.</p>
+
+            <h2>La Hiérarchie des Couches (Modèle de Données)</h2>
+            <table class="rpv-table">
+                <thead>
+                    <tr>
+                        <th>Classe d'entité</th>
+                        <th>Rôle Stratégique</th>
+                        <th>Spécificité Technique</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Traces_Brutes</strong></td>
+                        <td>Staging / Importation</td>
+                        <td>Zone tampon isolant les relevés GPX de terrain avant normalisation.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tronçons</strong></td>
+                        <td>Cœur du système</td>
+                        <td>Réseau physique canonique unique. Entités Z-aware (altitudes intégrées).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Itinéraires</strong></td>
+                        <td>Couche éditoriale</td>
+                        <td>Assemblage logique de tronçons pour la publication grand public.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Liaisons_Depart</strong></td>
+                        <td>Connectivité</td>
+                        <td>Segments de raccordement entre le point d'accueil (Parking) et le réseau.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PatrimoinePOI</strong></td>
+                        <td>Valorisation</td>
+                        <td>Points d'intérêt touristiques (Bati_religieux, Site_naturel, etc.).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Équipements</strong></td>
+                        <td>Gestion technique</td>
+                        <td>Mobilier fonctionnel (Banc, Signalétique, Défibrillateur).</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p class="mt-4">Cette segmentation assure une <strong>normalisation topologique</strong> : un sentier emprunté par plusieurs boucles n'est saisi qu'une seule fois dans la couche <em>Tronçons</em>. La couche <em>Liaisons_Depart</em> résout spécifiquement la problématique du "dernier kilomètre" entre l'équipement d'accueil et le réseau linéaire.</p>
+
+            <h1 class="mt-10">3. L'Interface d'Administration (Back-Office)</h1>
+            <p>L'interface, développée sous ArcGIS Experience Builder, agit comme un orchestrateur masquant la complexité des scripts de traitement.</p>
+
+            <h2>Un Centre de Contrôle "Zéro Code"</h2>
+            <p>Le back-office articule une carte centrale de visualisation temps réel et un panneau latéral regroupant les outils automatisés. La philosophie <strong>"Zéro Code"</strong> est rendue possible par l'intégration d'ArcGIS Notebooks (Runtime Standard). Ce choix technologique est crucial : il permet d'exécuter des scripts Python avancés tout en respectant l'objectif de <strong>consommation de crédits nulle</strong> pour le fonctionnement courant.</p>
+
+            <h2>Ergonomie et Identité Visuelle</h2>
+            <p>Afin de garantir l'adoption de l'outil, l'interface respecte la charte graphique institutionnelle : les typographies <em>Montserrat</em> (pour les titres) et <em>Roboto</em> (pour le corps de texte) s'associent à une palette de verts (#1F4D2E à #A5D6A7). Cette cohérence visuelle n'est pas qu'esthétique ; elle facilite la navigation intuitive pour les référents non-spécialistes SIG.</p>
+
+        </div>
+        
+        <div class="page-footer">
+            <span>Guide d'Apprentissage RPV - Saint-Martin-Sainte-Catherine</span>
+        </div>
+    </div>
+
+    <!-- PAGE 5 : CHAPITRE 4 & 5 -->
+    <div class="a4-page">
+        <div class="page-header">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#1F4D2E] rounded flex items-center justify-center text-white font-title font-bold text-xs">RPV</div>
+                <span class="font-title text-[#1F4D2E] font-semibold text-sm">4. Alimentation & 5. Moissonneur</span>
+            </div>
+        </div>
+        
+        <div class="page-content content">
+            
+            <div class="chapter-banner">
+                <i data-lucide="cpu" class="banner-icon"></i>
+                <span class="chapter-num">CHAPITRES 4 & 5</span>
+                <h1>Automatisation et Traitements</h1>
+            </div>
+
+            <h1>4. Alimentation du Réseau : Du GPX au Tronçon</h1>
+            <p>Le passage du relevé GPS à la donnée qualifiée nécessite un traitement de précision pour éviter les erreurs de topologie ("spaghetti data").</p>
+
+            <h2>Le Processeur Topologique (Jalon 3)</h2>
+            <p>Une fois le GPX téléversé dans le module d'importation, le script hybride effectue les opérations suivantes :</p>
+            <ul>
+                <li><strong>Indexation spatiale (STRtree) :</strong> Utilisation d'un index spatial pour des requêtes de proximité ultra-rapides sans analyse spatiale payante.</li>
+                <li><strong>Enrichissement Altimétrique :</strong> Appel à l'API Altimétrique de l'IGN. Le script gère le découpage par lots de 200 points (<em>chunk_size=200</em>) et intègre des délais de sécurité (<em>rate-limits</em>) pour garantir la fiabilité du transfert.</li>
+                <li><strong>Qualification via WFS :</strong> Le système interroge les services WFS de la Géoplateforme IGN pour identifier automatiquement le revêtement (sentier, goudron) via la BD TOPO, assurant une donnée toujours à jour.</li>
+                <li><strong>Accrochage et Doublons :</strong> Un couloir de tolérance (buffer) analyse si la trace existe déjà. Une vérification visuelle de l'accrochage reste impérative avant la promotion définitive en tronçon.</li>
+            </ul>
+
+            <h1 class="mt-10">5. Le Moissonneur de Patrimoine (OSM)</h1>
+            <p>Pour enrichir le référentiel sans double saisie, le module "Master Harvester" exploite les gisements d'OpenStreetMap via l'API Overpass.</p>
+
+            <h2>Stratégie de Classification et de Sécurité</h2>
+            <p>Le moissonneur filtre les objets par code INSEE et les classe selon les domaines métier du RPV :</p>
+            <ul>
+                <li><strong>Domaines Patrimoine :</strong> Bati_religieux, Point_de_vue, Arbre_remarquable, Site_naturel.</li>
+                <li><strong>Domaines Équipements :</strong> AED_Defibrillateur (sécurité), Banc, Table_pique_nique, Parking.</li>
+            </ul>
+
+            <h2>Optimisation et Résilience</h2>
+            <p>Pour parer aux instabilités des serveurs publics, le script bascule automatiquement entre plusieurs miroirs. La déduplication est gérée en mémoire via la <strong>formule de Haversine</strong> : tout point OSM situé à moins de 15 mètres d'un point existant est ignoré. Ce calcul local en Python pur garantit l'absence de consommation de crédits de géotraitement ArcGIS.</p>
+
+        </div>
+        
+        <div class="page-footer">
+            <span>Guide d'Apprentissage RPV - Saint-Martin-Sainte-Catherine</span>
+        </div>
+    </div>
+
+    <!-- PAGE 6 : CHAPITRE 6 & 7 -->
+    <div class="a4-page">
+        <div class="page-header">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-[#1F4D2E] rounded flex items-center justify-center text-white font-title font-bold text-xs">RPV</div>
+                <span class="font-title text-[#1F4D2E] font-semibold text-sm">6. Maintenance & 7. Gouvernance</span>
+            </div>
+        </div>
+        
+        <div class="page-content content">
+            
+            <h1>6. Signalements : Gouvernance Participative</h1>
+            <p>Le RPV transforme chaque usager en acteur de la maintenance grâce à la couche <em>SignalementTerrain</em>.</p>
+
+            <h2>Modération et Sécurité des Données</h2>
+            <p>La gouvernance des signalements repose sur une <strong>Vue Publique Restreinte</strong>. Conformément aux bonnes pratiques de sécurité :</p>
+            <ul>
+                <li><strong>Public :</strong> Peut uniquement créer un signalement (Obstacle, Balisage, Érosion). Le réglage "Editors can't see any features" est activé pour protéger l'intégrité du système.</li>
+                <li><strong>Administrateur :</strong> Modère et arbitre les statuts, qualifie la priorité (Urgente, Moyenne) et suit le cycle de vie : En attente &rarr; En cours d'analyse &rarr; Résolu.</li>
+            </ul>
+
+            <h1 class="mt-10">7. Gouvernance et Règles Métier</h1>
+            <p>La pérennité du système repose sur le respect strict de la chaîne de production de la donnée par les référents.</p>
+
+            <div class="callout callout-attention mt-6">
+                <div class="pt-1"><i data-lucide="alert-circle"></i></div>
+                <div>
+                    <div class="callout-title">Séquence Opérationnelle Obligatoire</div>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>1. Importation GPX</strong> &rarr; Injection dans <em>Traces_Brutes</em>.</li>
+                        <li><strong>2. Génération de Tronçons</strong> &rarr; Nettoyage topologique, enrichissement IGN et Z-aware.</li>
+                        <li><strong>3. Assemblage d'Itinéraires</strong> &rarr; Construction de la boucle éditoriale et fiches PDF.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="callout callout-practice mt-6">
+                <div class="pt-1"><i data-lucide="check-circle"></i></div>
+                <div>
+                    <div class="callout-title">Checklist de Validation Finale</div>
+                    <p class="mb-2 mt-1">Avant toute publication, le référent doit valider :</p>
+                    <ul class="mb-0">
+                        <li><strong>Accrochage topologique :</strong> Vérification visuelle point par point des jonctions de tronçons.</li>
+                        <li><strong>Connectivité :</strong> Présence d'une couche <em>Liaisons_Depart</em> reliant le parking au sentier.</li>
+                        <li><strong>Statut de modération :</strong> Validation des POI importés avant passage au statut "Visible Public".</li>
+                        <li><strong>Souveraineté :</strong> Confirmation que la logique métier réside dans les scripts Python et non dans des outils propriétaires "boîte noire".</li>
+                    </ul>
+                </div>
+            </div>
+
+            <p class="mt-6 text-center font-title text-[#1F4D2E] font-semibold italic">En suivant ces protocoles, Saint-Martin-Sainte-Catherine assure la maîtrise totale de son infrastructure géographique pour les générations futures.</p>
+
+        </div>
+        
+        <div class="page-footer">
+            <span>Guide d'Apprentissage RPV - Saint-Martin-Sainte-Catherine</span>
+        </div>
+    </div>
+
+    <script>
+        // Initialisation des icônes Lucide
+        lucide.createIcons();
+    </script>
+</body>
+</html>
